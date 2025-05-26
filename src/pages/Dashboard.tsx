@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Plus, Search, Clock, LayoutGrid, Book, Trash2, Edit, 
   Brain, ArrowRight, Filter, ListFilter, Calendar, FileText,
-  AlertCircle, MessageSquare
+  AlertCircle, MessageSquare, Moon, Sun
 } from 'lucide-react';
 import FlashcardGenerator from '@/components/FlashcardGenerator';
 import FlashcardAIChat from '@/components/FlashcardAIChat';
@@ -250,7 +249,7 @@ const Dashboard = () => {
     setSearchQuery(''); // Reset search when changing folders
     setSelectedCardIds([]); // Clear selection when changing folders
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -717,69 +716,80 @@ const FlashcardPreview = ({
   onToggleSelect?: () => void;
 }) => {
   const [showAnswer, setShowAnswer] = useState(false);
-  
-  return (
-    <Card 
-      className={`glass-card overflow-hidden h-60 flex flex-col relative group ${isSelected ? 'ring-2 ring-primary' : ''}`}
-      onMouseEnter={() => {
-        if (!onToggleSelect) {
-          setShowAnswer(true);
-        }
-      }}
-      onMouseLeave={() => setShowAnswer(false)}
-    >
-      {card.category && (
-        <div className="absolute top-3 left-3 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-          {card.category}
-        </div>
-      )}
-      
-      {/* Checkbox for selection */}
-      {onToggleSelect && (
-        <div 
-          className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center z-10"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSelect();
-          }}
-        >
-          <input 
-            type="checkbox" 
-            checked={isSelected} 
-            onChange={() => {}} 
-            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+  const [isEditing, setIsEditing] = useState(false);
+  const [front, setFront] = useState(card.front);
+  const [back, setBack] = useState(card.back);
+  const [category, setCategory] = useState(card.category || "");
+  const { updateFlashcard } = useFlashcards();
+
+  useEffect(() => {
+    setFront(card.front);
+    setBack(card.back);
+    setCategory(card.category || "");
+  }, [card]);
+
+  const handleSave = () => {
+    updateFlashcard(card.id, { front, back, category });
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <Card className="glass-card overflow-hidden h-60 flex flex-col relative group dark:bg-slate-800 dark:text-white">
+        <CardContent className="pt-12 pb-4 px-6 flex-grow flex flex-col gap-2">
+          <input
+            className="border rounded p-2 dark:bg-slate-700"
+            value={front}
+            onChange={e => setFront(e.target.value)}
+            placeholder="Front (Question)"
           />
-        </div>
-      )}
-      
+          <input
+            className="border rounded p-2 dark:bg-slate-700"
+            value={back}
+            onChange={e => setBack(e.target.value)}
+            placeholder="Back (Answer)"
+          />
+          <input
+            className="border rounded p-2 dark:bg-slate-700"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            placeholder="Category (Optional)"
+          />
+        </CardContent>
+        <CardFooter className="pt-0 pb-4 px-6 flex justify-end gap-2">
+          <Button size="sm" onClick={handleSave}>Save</Button>
+          <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={`glass-card overflow-hidden h-60 flex flex-col relative group ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <CardContent className="pt-12 pb-4 px-6 flex-grow">
-        <div className="line-clamp-4 font-medium text-lg">
-          {card.front}
-        </div>
+        <div className="line-clamp-4 font-medium text-lg">{card.front}</div>
       </CardContent>
-      
       <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center">
         <div className="text-xs text-gray-500">
           Created {new Date(card.dateCreated).toLocaleDateString()}
         </div>
-        
         <div className="flex gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-8 w-8 p-0 rounded-full"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
-              document.dispatchEvent(new CustomEvent('editFlashcard', { detail: card }));
+              setIsEditing(true);
             }}
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 w-8 p-0 rounded-full text-red-500" 
-            onClick={(e) => {
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 rounded-full text-red-500"
+            onClick={e => {
               e.stopPropagation();
               onDelete();
             }}
@@ -788,74 +798,6 @@ const FlashcardPreview = ({
           </Button>
         </div>
       </CardFooter>
-      
-      {/* Preview of back content on hover - only show when not in selection mode or explicitly clicked */}
-      {onToggleSelect ? (
-        // In selection mode, add a button to view answer
-        <div className={`absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm p-6 flex flex-col transition-all duration-300 ${
-          showAnswer ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className="font-medium text-sm text-gray-500 mb-2">Answer:</div>
-          <p className="line-clamp-5 text-sm">{card.back}</p>
-          <div className="mt-auto pt-4 flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 rounded-full text-red-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 gap-1 text-primary">
-              View Details
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      ) : (
-        // In regular mode, show answer on hover
-        <div className={`absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm p-6 flex flex-col transition-all duration-300 ${
-          showAnswer ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className="font-medium text-sm text-gray-500 mb-2">Answer:</div>
-          <p className="line-clamp-5 text-sm">{card.back}</p>
-          <div className="mt-auto pt-4 flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 rounded-full text-red-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 gap-1 text-primary">
-              View Details
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Add a view answer button that appears when in selection mode */}
-      {onToggleSelect && !showAnswer && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute bottom-3 right-3 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowAnswer(true);
-          }}
-        >
-          View Answer
-        </Button>
-      )}
     </Card>
   );
 };

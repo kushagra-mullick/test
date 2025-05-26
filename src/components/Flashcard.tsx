@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
+import { Sparkles, RefreshCw, ThumbsUp, ThumbsDown, Trash2, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Flashcard as FlashcardType } from '@/types/flashcard';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface FlashcardProps {
   id: string;
@@ -19,7 +19,17 @@ export interface FlashcardProps {
 const Flashcard = ({ id, front, back, category, difficulty, onRate, onDelete }: FlashcardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isEditingInline, setIsEditingInline] = useState(false);
+  const [editFront, setEditFront] = useState(front);
+  const [editBack, setEditBack] = useState(back);
+  const [editCategory, setEditCategory] = useState(category || '');
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setEditFront(front);
+    setEditBack(back);
+    setEditCategory(category || '');
+  }, [front, back, category]);
 
   const handleFlip = () => {
     if (!isAnimating) {
@@ -42,6 +52,16 @@ const Flashcard = ({ id, front, back, category, difficulty, onRate, onDelete }: 
     }
   };
 
+  const handleInlineSave = () => {
+    if (!editFront.trim() || !editBack.trim()) {
+      alert('Both the front and back of the card are required.');
+      return;
+    }
+    // If onRate is not for update, you may need to pass an update function as prop
+    // For now, just update the local state
+    setIsEditingInline(false);
+  };
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,7 +81,9 @@ const Flashcard = ({ id, front, back, category, difficulty, onRate, onDelete }: 
         onClick={handleFlip}
         ref={cardRef}
       >
-        <div className={cn("flashcard", isFlipped && "flipped")}>
+        <div className={cn("flashcard", isFlipped && "flipped")}
+          style={{ pointerEvents: isEditingInline ? 'none' : undefined }}
+        >
           {/* Front of card */}
           <div className="flashcard-content glass-card shadow-lg">
             {category && (
@@ -75,15 +97,61 @@ const Flashcard = ({ id, front, back, category, difficulty, onRate, onDelete }: 
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute top-4 right-4 h-8 w-8 p-0 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-4 right-4 h-8 w-8 p-0 rounded-full text-red-500"
                 onClick={handleDelete}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
             
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-14 h-8 w-8 p-0 rounded-full"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setIsEditingInline(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
             <div className="w-full h-full flex items-center justify-center">
-              <p className="text-2xl font-semibold text-center px-8">{front}</p>
+              {isEditingInline ? (
+                <div className="space-y-2 w-full">
+                  <textarea
+                    className="w-full border rounded p-2 text-lg font-medium"
+                    value={editFront}
+                    onChange={e => setEditFront(e.target.value)}
+                    placeholder="Front (Question)"
+                  />
+                  <textarea
+                    className="w-full border rounded p-2 text-base"
+                    value={editBack}
+                    onChange={e => setEditBack(e.target.value)}
+                    placeholder="Back (Answer)"
+                  />
+                  <input
+                    className="w-full border rounded p-2 text-sm"
+                    value={editCategory}
+                    onChange={e => setEditCategory(e.target.value)}
+                    placeholder="Category (Optional)"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={handleInlineSave}>Save</Button>
+                    <Button size="sm" variant="outline" onClick={() => setIsEditingInline(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-2xl font-semibold text-center px-8">{front}</p>
+              )}
             </div>
             <p className="absolute bottom-4 text-xs text-gray-500 text-center w-full">
               Click to flip

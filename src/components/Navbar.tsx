@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu, X, Brain, LogOut, User, BookOpen, LayoutDashboard } from "lucide-react";
+import { Menu, X, Brain, LogOut, User, BookOpen, LayoutDashboard, Sun, Moon } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { 
   DropdownMenu,
@@ -20,6 +19,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,6 +43,17 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const toggleDarkMode = () => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      setIsDark(false);
+    } else {
+      html.classList.add('dark');
+      setIsDark(true);
+    }
   };
 
   return (
@@ -73,7 +84,7 @@ const Navbar = () => {
           )}
           
           {isAuthenticated ? (
-            <div className="ml-4">
+            <div className="ml-4 flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="rounded-full">
@@ -105,6 +116,13 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <button
+                onClick={toggleDarkMode}
+                className="rounded-full p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors ml-4"
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-800" />}
+              </button>
             </div>
           ) : (
             <div className="ml-4 flex items-center space-x-2">
@@ -118,6 +136,13 @@ const Navbar = () => {
                   Sign Up
                 </Button>
               </Link>
+              <button
+                onClick={toggleDarkMode}
+                className="rounded-full p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors ml-4"
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-800" />}
+              </button>
             </div>
           )}
         </nav>
