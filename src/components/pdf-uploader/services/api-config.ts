@@ -3,7 +3,7 @@
 // This file provides the hardcoded API key for all users
 
 // Your fixed API key that all users will use
-const CENTRAL_API_KEY = "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";
+const CENTRAL_API_KEY = "";
 
 export const API_CONFIGURATION = {
   // Always return the central API key
