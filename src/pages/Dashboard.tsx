@@ -767,6 +767,19 @@ const FlashcardPreview = ({
   return (
     <Card className={`glass-card overflow-hidden h-60 flex flex-col relative group ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <CardContent className="pt-12 pb-4 px-6 flex-grow">
+        {/* Checkbox for selection */}
+        {typeof isSelected !== 'undefined' && onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={e => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+            className="absolute top-4 left-4 w-5 h-5 accent-primary cursor-pointer z-10"
+            title="Select flashcard"
+          />
+        )}
         <div className="line-clamp-4 font-medium text-lg">{card.front}</div>
       </CardContent>
       <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center">

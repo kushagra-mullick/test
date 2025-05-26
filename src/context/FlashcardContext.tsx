@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Flashcard, FlashcardContextType } from '../types/flashcard';
 import { sampleFlashcards } from '../data/sampleFlashcards';
@@ -6,6 +5,7 @@ import { calculateNextReviewDate } from '../utils/flashcardUtils';
 import { getFlashcards, addFlashcard as saveFlashcard, updateFlashcardById, deleteFlashcardById, moveFlashcardsToFolder } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useGamification } from '@/hooks/useGamification';
 
 const FlashcardContext = createContext<FlashcardContextType | undefined>(undefined);
 
@@ -14,6 +14,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const { isAuthenticated, user } = useAuth();
+  const gamification = useGamification();
 
   // Load flashcards when auth state changes or selected folder changes
   useEffect(() => {
@@ -152,11 +153,9 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (isAuthenticated) {
       try {
         await updateFlashcardById(id, flashcard);
-        setFlashcards(prev =>
-          prev.map(card =>
-            card.id === id ? { ...card, ...flashcard } : card
-          )
-        );
+        // Always reload all flashcards from DB after update to ensure latest data
+        const cards = await getFlashcards(selectedFolderId || undefined);
+        setFlashcards(cards);
       } catch (error) {
         console.error('Error updating flashcard in Supabase', error);
       }
@@ -206,6 +205,29 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             card.id === id ? { ...card, ...updatedCard } : card
           )
         );
+        // --- Gamification logic ---
+        if (gamification && gamification.update && gamification.state) {
+          // Award XP based on difficulty
+          let xpDelta = 0;
+          if (difficulty === 'easy') xpDelta = 5;
+          else if (difficulty === 'medium') xpDelta = 10;
+          else if (difficulty === 'hard') xpDelta = 15;
+
+          // Streak logic: increment if lastActive is not today, else keep
+          const lastActive = gamification.state.lastActive ? new Date(gamification.state.lastActive) : null;
+          const today = new Date();
+          const isSameDay = lastActive &&
+            lastActive.getFullYear() === today.getFullYear() &&
+            lastActive.getMonth() === today.getMonth() &&
+            lastActive.getDate() === today.getDate();
+
+          gamification.update({
+            xpDelta,
+            streakDelta: isSameDay ? 0 : 1,
+            setLastActive: today.toISOString(),
+          });
+        }
+        // --- End gamification logic ---
       } catch (error) {
         console.error('Error updating flashcard rating in Supabase', error);
       }
@@ -246,18 +268,9 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (isAuthenticated) {
       try {
         await moveFlashcardsToFolder(flashcardIds, folderId);
-        
-        // Update local state
-        setFlashcards(prev => {
-          const updatedCards = [...prev];
-          flashcardIds.forEach(id => {
-            const index = updatedCards.findIndex(card => card.id === id);
-            if (index !== -1) {
-              updatedCards[index] = { ...updatedCards[index], folderId };
-            }
-          });
-          return updatedCards;
-        });
+        // Always reload all flashcards from DB after move to ensure latest data
+        const cards = await getFlashcards(selectedFolderId || undefined);
+        setFlashcards(cards);
       } catch (error) {
         console.error('Error moving flashcards in Supabase', error);
       }

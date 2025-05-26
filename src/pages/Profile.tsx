@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,12 +9,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, User, Shield, Key } from 'lucide-react';
+import { XPBar, StreakCounter } from '@/components/ui';
+import { useGamification } from '@/hooks/useGamification';
 
 const Profile = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name || '');
   const [isEditing, setIsEditing] = useState(false);
+  const { state: gamification, loading: gamificationLoading } = useGamification();
   
   useEffect(() => {
     if (user) {
@@ -48,6 +50,16 @@ const Profile = () => {
       <main className="flex-grow pt-28 pb-16 px-4">
         <div className="container mx-auto max-w-4xl">
           <h1 className="text-3xl font-display font-bold mb-8">Your Profile</h1>
+          
+          {/* Gamification UI */}
+          {gamificationLoading ? (
+            <div className="mb-6">Loading gamification...</div>
+          ) : gamification ? (
+            <>
+              <XPBar xp={gamification.xp} level={gamification.level} />
+              <StreakCounter streak={gamification.streak} />
+            </>
+          ) : null}
           
           <Tabs defaultValue="account" className="space-y-8">
             <TabsList className="mb-6">
