@@ -35,6 +35,14 @@ import FolderManager from '@/components/FolderManager';
 import ImportSharedDeck from '@/components/ImportSharedDeck';
 import { getFolders } from '@/services/supabase';
 
+import 'katex/dist/katex.min.css';
+import { BlockMath } from 'react-katex';
+
+// Utility to check if string is likely LaTeX
+function isLatex(text: string) {
+  return /\$.*\$|\\\(.+\\\)|\\\[.+\\\]/.test(text);
+}
+
 const Dashboard = () => {
   const { flashcards, addFlashcard, addFlashcards, deleteFlashcard, updateFlashcard, selectedFolderId, setSelectedFolderId, moveFlashcards } = useFlashcards();
   const [searchQuery, setSearchQuery] = useState('');
@@ -780,7 +788,12 @@ const FlashcardPreview = ({
             title="Select flashcard"
           />
         )}
-        <div className="line-clamp-4 font-medium text-lg">{card.front}</div>
+        {/* Render front as math if LaTeX, else plain text */}
+        <div className="line-clamp-4 font-medium text-lg">
+          {isLatex(card.front)
+            ? <BlockMath math={card.front.replace(/^\$|\$$/g, '')} />
+            : card.front}
+        </div>
       </CardContent>
       <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center">
         <div className="text-xs text-gray-500">

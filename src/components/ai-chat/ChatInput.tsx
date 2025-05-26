@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,11 +10,24 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
   const [inputMessage, setInputMessage] = useState('');
+  const [warning, setWarning] = useState('');
+  const MAX_LENGTH = 500;
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
-      onSendMessage(inputMessage);
+      onSendMessage(inputMessage.slice(0, MAX_LENGTH));
       setInputMessage('');
+      setWarning('');
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (e.target.value.length > MAX_LENGTH) {
+      setWarning(`Message limited to ${MAX_LENGTH} characters.`);
+      setInputMessage(e.target.value.slice(0, MAX_LENGTH));
+    } else {
+      setWarning('');
+      setInputMessage(e.target.value);
     }
   };
 
@@ -28,14 +40,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
 
   return (
     <div className="p-4 border-t bg-background">
+      <div className="text-sm text-blue-600 dark:text-blue-300 mb-2">
+        Each message is limited to 500 characters. You can send up to 20 messages per session.
+      </div>
       <div className="flex w-full items-center space-x-2 max-w-3xl mx-auto">
         <Textarea
           placeholder="Ask about your flashcards..."
           value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           className="flex-grow min-h-[50px] max-h-[100px] resize-none"
+          maxLength={MAX_LENGTH}
         />
+        {warning && <div className="text-red-500 text-xs mt-1">{warning}</div>}
         <Button 
           onClick={handleSendMessage} 
           disabled={isLoading || !inputMessage.trim()}

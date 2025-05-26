@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { extractTextFromPdf } from '../pdf-utils';
@@ -40,11 +39,13 @@ export const usePdfExtraction = () => {
       pdfFile,
       (progress) => setProgress(progress),
       (text) => {
-        setExtractedText(text);
+        // Limit extracted text to 2000 characters
+        const limitedText = text.slice(0, 2000);
+        setExtractedText(limitedText);
         setIsLoading(false);
         toast({
           title: "PDF loaded successfully",
-          description: "Your PDF is ready for AI processing."
+          description: `Your PDF is ready for AI processing. (Limited to ${limitedText.length} characters)`
         });
       },
       (error) => {

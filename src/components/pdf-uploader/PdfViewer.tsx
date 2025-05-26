@@ -54,6 +54,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           
           {!isLoading && extractedText && (
             <div className="mt-3 pt-3 border-t space-y-2">
+              <div className="text-sm text-blue-600 dark:text-blue-300 mb-2">
+                PDF extraction is limited to 2000 characters. Showing {extractedText.length} characters extracted from your PDF.
+              </div>
               <div className="flex justify-between items-center">
                 <Button 
                   variant="outline" 

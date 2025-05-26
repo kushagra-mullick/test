@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useFlashcards } from '@/context/FlashcardContext';
@@ -51,6 +50,7 @@ const FlashcardAIChat: React.FC<FlashcardAIChatProps> = ({ onClose }) => {
   const [extractedFlashcards, setExtractedFlashcards] = useState<Array<{front: string; back: string; category?: string}>>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
+  const MAX_MESSAGES = 20;
 
   const handleImportFlashcards = () => {
     if (extractedFlashcards.length > 0) {
@@ -65,6 +65,17 @@ const FlashcardAIChat: React.FC<FlashcardAIChatProps> = ({ onClose }) => {
   };
 
   const handleSendMessage = async (inputMessage: string) => {
+    // Limit number of user messages per session
+    const userMessagesCount = messages.filter(m => m.role === 'user').length;
+    if (userMessagesCount >= MAX_MESSAGES) {
+      toast({
+        title: "Message Limit Reached",
+        description: `You have reached the maximum of ${MAX_MESSAGES} messages per session. Please refresh or start a new session to continue.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Check if API key is available
     if (!API_CONFIGURATION.hasApiKey && !API_CONFIGURATION.useSimulationMode) {
       toast({
